@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "mqtt_client.h"
+#include "colours.h"
 
 MQTT_Client::MQTT_Client(const char *url, const char *clientid)
 {
@@ -63,15 +64,32 @@ void MQTT_Client::publish(const char* payload, const char* topic, const char* cl
     int rc;
     if (rc = MQTTClient_publishMessage(client, topic, &publishMessage, &token) != MQTTCLIENT_SUCCESS)
     {
-        printf("Couldnt publish message, error code: %i", rc);
+        printf("Couldnt publish message, error code: %i \n", rc);
     }
     else
     {
-        printf("Waiting for topic %s \n in topic %s", payload, topic);
-        while (deliveredToken != token)
+        printf("Waiting for topic %s in topic %s \n", payload, topic);
+
+    }
+}
+
+void MQTT_Client::subscribe(const char * topic)
+{   
+    int rc; 
+    if((rc = MQTTClient_subscribe(client, topic, 0) != MQTTCLIENT_SUCCESS))
+    {
+        printf("Failed to subscribe. Error code: %i \n", rc);
+    }
+    else {
+        int message;
+        do
         {
-            sleep(1000L);
+            message = getchar();
+        } while (message != 'Q' && message != 'q');
+        if (rc = MQTTClient_unsubscribe(client, topic) != MQTTCLIENT_SUCCESS){
+            printf("Couldn't unsubscribe \n");
         }
+        
     }
 }
 
@@ -85,8 +103,16 @@ static void connectionLost(void *context, char *reason)
 
 static int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
-    printf("Message arrived in topic: %s\n", topicName);
-    printf("Message %*s \n", message->payloadlen, (char *)message->payload);
+
+    printf("Topic:");
+    colours::yellow();
+    printf("%s\n", topicName);
+    colours::reset();
+    printf("Message" );
+    colours::yellow();
+    printf("%*s \n", message->payloadlen, (char *)message->payload);
+    colours::reset();
+
     // set the space free again
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -96,6 +122,5 @@ static int messageArrived(void *context, char *topicName, int topicLength, MQTTC
 static void messageDelivered(void *context, MQTTClient_deliveryToken token)
 {
     printf("Message delivered with token: %d\n", token);
-    // ? dont get why
     deliveredToken = token;
 }

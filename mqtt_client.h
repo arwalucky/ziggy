@@ -9,13 +9,14 @@ class MQTT_Client
 private:
     MQTTClient client;
     MQTTClient_connectOptions connectionOptions = MQTTClient_connectOptions_initializer;
-
     MQTTClient_message publishMessage = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
 public:
     MQTT_Client(const char *url, const char *clientid);
     void connect();
-    void publish(const char *payload, const char *topic, const char* clientid) ;
+    void publish(const char *payload, const char *topic, const char* clientid);
+    void subscribe(const char * topic);
+
 };
 
 static void connectionLost(void *context, char *reason);
