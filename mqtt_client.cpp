@@ -107,7 +107,7 @@ void connectionLost(void *context, char *reason)
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
 
-    EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED, message);
+    EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED,  (char *)message->payload);
 
     printf("Topic:");
     colours::yellow();
