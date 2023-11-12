@@ -13,12 +13,12 @@ Redis_Client::Redis_Client(sw::redis::Redis &redis) : EventListener()
 
 void Redis_Client::handleEvent(EventType event, void *message)
 {
+    auto data = static_cast<MQTTClient_message *>(message);
+
     switch (event)
     {
     case MQTT_MESSAGE_RECEIVED:
-        printf("wieeh %p \n", (const char*) message);
-        //printf("Value:  %d\n", *message );
-        this->redis->publish("test", "tespp");
+        this->redis->publish("test", (char *)data->payload);
         break;
 
     default:

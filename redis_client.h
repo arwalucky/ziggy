@@ -1,4 +1,5 @@
 #include "event_handling/event_manager.hpp"
+#include "MQTTClient.h"
 
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
