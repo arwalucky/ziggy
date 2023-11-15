@@ -1,3 +1,5 @@
+#include <iostream>
+#include <algorithm>
 #include "event_handling/event_manager.hpp"
 #include "MQTTClient.h"
 
@@ -15,5 +17,6 @@ public:
     Redis_Client(sw::redis::Redis &redis);
     
     void handleEvent(EventType event, void *message);
+    bool checkAnchorList(MQTTClient_message *data);
 };
 

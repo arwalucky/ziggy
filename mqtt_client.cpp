@@ -1,37 +1,36 @@
 #include "mqtt_client.h"
 
-MQTT_Client::MQTT_Client(const char *url, const char *clientid, sw::redis::Redis &redis)
+// TODO: change rc to sth that makes sense
+MQTT_Client::MQTT_Client(const char *url, const char *clientid, sw::redis::Redis &redis) : EventListener()
 {
 
+    this->redis = &redis;
+    this->clientid = clientid;
     int rc;
     // Creating an MQTT client
     if (rc = MQTTClient_create(&client, url, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
-        // rc = EXIT_FAILURE;
     }
     else
     {
         printf("woopsi maceroni, I am connected \n");
-        // rc = EXIT_SUCCESS;
     }
 
     // Setting callback funcitons:
     if (rc = MQTTClient_setCallbacks(client, NULL, connectionLost, messageArrived, messageDelivered) != MQTTCLIENT_SUCCESS)
     {
         printf("Callbacks not set\n");
-        // rc = EXIT_FAILURE;
     }
     else
     {
         printf("Callbacks set \n");
-        // rc = EXIT_SUCCESS;
     }
     EventManager::getInstance().dispatchEvent(MQTT_CONNECTED, NULL);
 
-    this->redis = &redis;
 
-    this->redis->publish("apples", "test");
+    EventManager::getInstance().registerListener(ANCHOR_FOUND, this);
+    EventManager::getInstance().registerListener(ANCHOR_REGISTERED, this);
 }
 
 void MQTT_Client::connect()
@@ -46,12 +45,12 @@ void MQTT_Client::connect()
     {
         printf("Connected to MQTT \n");
     }
-
 };
 
 void MQTT_Client::publish(const char *payload, const char *topic, const char *clientid)
 {
 
+    // TODO : check if relevant
     //? somehow doesnt work without char*
     publishMessage.payload = (char *)payload;
     publishMessage.payloadlen = (int)strlen(payload);
@@ -106,18 +105,19 @@ void connectionLost(void *context, char *reason)
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
+    // sstring topic = static_cast<std::string *> (topicName);
 
-    EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED, message);
-
-    printf("Topic:");
-    colours::yellow();
-    printf("%s\n", topicName);
-    colours::reset();
-    printf("Message");
-    colours::yellow();
-    printf("%*s \n", message->payloadlen, (char *)message->payload);
-    colours::reset();
-
+    if (strcmp(topicName, (char *)"register") == 0)
+    {
+        printf("%s \n", topicName);
+        printf("%*s \n", message->payloadlen, (char *)message->payload);
+        EventManager::getInstance().dispatchEvent(NEW_ANCHOR, message);
+    }
+    else if (strcmp(topicName, "ziggy") == 0)
+    {
+        printf("%s\n", topicName);
+        EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED, message);
+    }
 
     // set the space free again
     MQTTClient_freeMessage(&message);
@@ -130,3 +130,23 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token)
     printf("Message delivered with token: %d\n", token);
     deliveredToken = token;
 }
+
+void MQTT_Client::handleEvent(EventType event, void *message)
+{
+    auto data = static_cast<MQTTClient_message *>(message);
+
+    switch (event)
+    {
+    case ANCHOR_FOUND:
+        publish("accepted", "register/ACK", this->clientid);
+        break;
+
+    case ANCHOR_REGISTERED:
+        publish("registered", "register/ACK", this->clientid);
+
+        break;
+
+    default:
+        break;
+    }
+};

@@ -3,7 +3,11 @@
 
 enum EventType {
     MQTT_MESSAGE_RECEIVED,
-    MQTT_CONNECTED
+    MQTT_CONNECTED,
+
+    NEW_ANCHOR,
+    ANCHOR_FOUND,
+    ANCHOR_REGISTERED
 };
 
 #endif
