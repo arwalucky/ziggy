@@ -13,24 +13,33 @@ using namespace sw::redis;
 int main()
 {
 
-
 	// Create an Redis object, which is movable but NOT copyable.
 	auto redis = Redis("tcp://127.0.0.1:6379");
-	redis.set("key1", "stard");
 
+	std::vector<std::string> vec = {};
+	redis.lrange("anchorList", 0, -1, std::back_inserter(vec));
+
+	if (!vec.empty())
+	{
+		redis.rpush("anchorList", "");
+	}
+	else
+	{
+		printf("anchorList found");
+	}
+	auto sub = redis.subscriber();
 
 	const char *url = "localhost:1883";
 	const char *clientid = "ziggy";
 	const char *payload = "test";
-	const char *topic = "ziggy";
+	const char *topic = "#";
 
 	Redis_Client redis1(redis);
-	//EventManager::getInstance().registerListener(MQTT_CONNECTED, redis1);
 
 	MQTT_Client mqttClient(url, clientid, redis);
 	mqttClient.connect();
-	mqttClient.publish(payload, topic, clientid);
-	mqttClient.subscribe(topic);
+	mqttClient.publish(payload, "ziggy", clientid);
+	mqttClient.subscribe("#");
 
 exit:
 	return 0;

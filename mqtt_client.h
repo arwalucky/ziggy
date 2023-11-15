@@ -10,7 +10,7 @@ using namespace sw::redis;
 
 inline MQTTClient_deliveryToken deliveredToken;
 
-class MQTT_Client
+class MQTT_Client : public EventListener
 {
 private:
     MQTTClient client;
@@ -19,14 +19,17 @@ private:
     MQTTClient_deliveryToken token;
     sw::redis::Redis *redis;
 
+	const char *clientid;
+
 public:
     MQTT_Client(const char *url, const char *clientid, sw::redis::Redis &redis);
     void connect();
     void publish(const char *payload, const char *topic, const char *clientid);
     void subscribe(const char *topic);
     void forwardMessage(const char *message);
+    void handleEvent(EventType event, void *message);
 };
-// QTT_Client *test;
+
 void connectionLost(void *context, char *reason);
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
 void messageDelivered(void *context, MQTTClient_deliveryToken token);
