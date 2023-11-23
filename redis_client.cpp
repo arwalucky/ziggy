@@ -39,6 +39,8 @@ void Redis_Client::handleEvent(EventType event, void *message)
 
 bool Redis_Client::checkAnchorList(MQTTClient_message *data)
 {
+    //gets anchor list from the database and looks through it for the anchor
+    //if none found, adds it to the list and returns false
     std::vector<std::string> vec = {};
     redis->lrange("anchorList", 0, -1, std::back_inserter(vec));
 
