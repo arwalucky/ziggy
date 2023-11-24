@@ -7,8 +7,13 @@
 #include "colours.h"
 #include "mqtt_client.h"
 #include "redis_client.h"
+#include "anchorList.hpp"
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
+#include <fstream>
+#include "scripts/json.hpp"
+using json = nlohmann::json;
+using namespace nlohmann::literals;
 
 int main()
 {
@@ -16,17 +21,35 @@ int main()
 	// Create an Redis object, which is movable but NOT copyable.
 	auto redis = Redis("tcp://127.0.0.1:6379");
 
-	std::vector<std::string> vec = {};
-	redis.lrange("anchorList", 0, -1, std::back_inserter(vec));
+//	create an object of type AnchorList
+	AnchorList alist;
+	alist.push_back("1234", 1.0, 2.0, 1234);
+	alist.push_back("5678", 3.0, 4.0, 5678);
+	alist.push_back("9012", 5.0, 6.0, 9012);
 
-	if (!vec.empty())
+
+// gets json format list of anchors
+	json j22 = alist.getAnchorList();
+
+
+// sends to redis
+	redis.command<void>("JSON.SET", "doc", ".", j22.dump());
+
+
+// gets from redis and prints
+	auto res = redis.command<OptionalString>("JSON.GET", "doc");
+	if (res)
 	{
-		redis.rpush("anchorList", "");
+		json j = json::parse(*res);
+		for (json::iterator it = j.begin(); it != j.end(); ++it)
+		{
+			std::cout << *it << '\n';
+		}
 	}
-	else
-	{
-		printf("anchorList found");
-	}
+	
+	//TODO: get registration data from Anchor with its location, timestamp and id and send it to redis
+
+	// Create a subscriber object.
 	auto sub = redis.subscriber();
 
 	const char *url = "localhost:1883";
