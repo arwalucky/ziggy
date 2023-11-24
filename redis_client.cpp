@@ -2,7 +2,6 @@
 
 Redis_Client::Redis_Client(sw::redis::Redis &redis) : EventListener()
 {
-
     // registers itself as a listener
     EventManager::getInstance().registerListener(MQTT_CONNECTED, this);
     EventManager::getInstance().registerListener(NEW_ANCHOR, this);
@@ -39,20 +38,21 @@ void Redis_Client::handleEvent(EventType event, void *message)
 
 bool Redis_Client::checkAnchorList(MQTTClient_message *data)
 {
-    std::vector<std::string> vec = {};
-    redis->lrange("anchorList", 0, -1, std::back_inserter(vec));
-
     std::string str = (char *)data->payload;
-    if (std::find(vec.begin(), vec.end(), str) != vec.end())
+
+    json anchors = AnchorList::getAnchorList();
+
+    for (auto &[key, value] : anchors.items())
     {
-        return true;
-    }
-    else
-    {
-        this->redis->rpush("anchorList", str);
-        return false;
+        if (value["id"] == str)
+        {
+            return true;
+        }
     }
 
-    vec.clear();
-    return this;
+    //TODO: make dynamic
+    AnchorList(str, 1, 3, 3);
+    this->redis->command<void>("JSON.SET", "doc", ".", anchors.dump());
+
+    return false;
 }

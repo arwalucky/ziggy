@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "event_handling/event_manager.hpp"
 #include "MQTTClient.h"
+#include "anchorList.hpp"
 
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
