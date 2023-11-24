@@ -8,14 +8,19 @@ using namespace nlohmann::literals;
 
 class AnchorList
 {
-private:
-  json anchorList;
+protected: 
+  std::string id;
+  float x;
+  float y;
+  unsigned int timestamp;
 
 public:
+
+  static json anchorList;
   /**
    * @brief Construct a new Anchor List object.
    */
-  AnchorList();
+  AnchorList(std::string id, float x, float y, unsigned int timestamp);
 
 
   /**
@@ -23,17 +28,7 @@ public:
    *
    * @return The JSON object.
    */
-  json getAnchorList();
-
-  /**
-   * @brief Appends the given Anchor to the end of the JSON.
-   *
-   * @param id 16-bit ID, 4 hex-digit-presentation.
-   * @param x Position of the anchor in meters.
-   * @param y Position of the anchor in meters.
-   * @param timestamp Time of the first addition in milliseconds.
-   */
-  void push_back(const std::string id, const float x, const float y, const unsigned int timestamp);
+  static json getAnchorList();
 
   /**
    * @brief Returns the number of anchors in the vector.

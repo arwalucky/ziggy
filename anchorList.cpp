@@ -1,23 +1,23 @@
 #include "anchorList.hpp"
 
-AnchorList::AnchorList()
+json AnchorList::anchorList = json::array();
+
+
+AnchorList::AnchorList(std::string id, float x, float y, unsigned int timestamp)
 {
+  anchorList.push_back({
+      {"id", id},
+      {"x", x},
+      {"y", y},
+      {"timestamp", timestamp}
+  });
 }
 
 json AnchorList::getAnchorList()
 {
-  return this->anchorList;
+  return anchorList;
 };
 
-void AnchorList::push_back(const std::string id, const float x, const float y, const unsigned int timestamp)
-{
-  this->anchorList.push_back({
-      {"id", id},
-      {"x", x},
-      {"y", y},
-      {"timestamp", timestamp},
-  });
-}
 
 size_t AnchorList::size() const
 {
