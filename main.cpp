@@ -21,10 +21,9 @@ int main()
 	auto redis = Redis("tcp://127.0.0.1:6379");
 
 	// gets from redis and saves locally
-	auto anchors = redis.command<OptionalString>("JSON.GET", "doc");
+	auto anchors = redis.command<OptionalString>("JSON.GET", "anchors");
 	if (anchors)
 	{
-		std::cout <<  "yes" << std::endl;
 		json anchorsTemp = json::parse(*anchors);
 		for (auto &[key, value] : anchorsTemp.items())
 		{
