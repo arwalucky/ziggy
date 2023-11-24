@@ -105,8 +105,7 @@ void connectionLost(void *context, char *reason)
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
-    // sstring topic = static_cast<std::string *> (topicName);
-
+    
     if (strcmp(topicName, (char *)"register") == 0)
     {
         printf("%s \n", topicName);
