@@ -18,37 +18,21 @@ using namespace nlohmann::literals;
 int main()
 {
 
-	// Create an Redis object, which is movable but NOT copyable.
 	auto redis = Redis("tcp://127.0.0.1:6379");
 
-
-	AnchorList("1234", 1.0, 2.0, 1234);
-	AnchorList("5678", 3.0, 4.0, 5678);	
-	AnchorList("9012", 5.0, 6.0, 9012);
-
-// gets json format list of anchors
-	json j22 = AnchorList::getAnchorList();
-
-		for (json::iterator it = j22.begin(); it != j22.end(); ++it)
+	// gets from redis and saves locally
+	auto anchors = redis.command<OptionalString>("JSON.GET", "doc");
+	if (anchors)
+	{
+		std::cout <<  "yes" << std::endl;
+		json anchorsTemp = json::parse(*anchors);
+		for (auto &[key, value] : anchorsTemp.items())
 		{
-			std::cout << *it << '\n';
+			AnchorList(value["id"], value["x"], value["y"], value["timestamp"]);
 		}
-// sends to redis
-	redis.command<void>("JSON.SET", "doc", ".", j22.dump());
+	}
 
-
-// // gets from redis and prints
-// 	auto res = redis.command<OptionalString>("JSON.GET", "doc");
-// 	if (res)
-// 	{
-// 		json j = json::parse(*res);
-// 		for (json::iterator it = j.begin(); it != j.end(); ++it)
-// 		{
-// 			std::cout << *it << '\n';
-// 		}
-// 	}
-	
-	//TODO: get registration data from Anchor with its location, timestamp and id and send it to redis
+	// TODO: get registration data from Anchor with its location, timestamp and id and send it to redis
 
 	// Create a subscriber object.
 	auto sub = redis.subscriber();
@@ -58,7 +42,7 @@ int main()
 	const char *payload = "test";
 	const char *topic = "#";
 
-	Redis_Client redis1(redis);
+	Database redis1(redis);
 
 	MQTT_Client mqttClient(url, clientid, redis);
 	mqttClient.connect();

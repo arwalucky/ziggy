@@ -9,13 +9,13 @@ using namespace sw::redis;
 
 #define MQTT_CLIENT_H
 
-class Redis_Client : public EventListener
+class Database : public EventListener
 {
 private:
     sw::redis::Redis *redis;
 
 public:
-    Redis_Client(sw::redis::Redis &redis);
+    Database(sw::redis::Redis &redis);
     
     void handleEvent(EventType event, void *message);
     bool checkAnchorList(MQTTClient_message *data);

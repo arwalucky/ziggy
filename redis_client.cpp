@@ -1,6 +1,6 @@
 #include "redis_client.h"
 
-Redis_Client::Redis_Client(sw::redis::Redis &redis) : EventListener()
+Database::Database(sw::redis::Redis &redis) : EventListener()
 {
     // registers itself as a listener
     EventManager::getInstance().registerListener(MQTT_CONNECTED, this);
@@ -10,7 +10,7 @@ Redis_Client::Redis_Client(sw::redis::Redis &redis) : EventListener()
     this->redis = &redis;
 };
 
-void Redis_Client::handleEvent(EventType event, void *message)
+void Database::handleEvent(EventType event, void *message)
 {
     auto data = static_cast<MQTTClient_message *>(message);
 
@@ -36,7 +36,7 @@ void Redis_Client::handleEvent(EventType event, void *message)
     }
 };
 
-bool Redis_Client::checkAnchorList(MQTTClient_message *data)
+bool Database::checkAnchorList(MQTTClient_message *data)
 {
     std::string str = (char *)data->payload;
 
