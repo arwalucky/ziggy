@@ -1,17 +1,11 @@
 #pragma once
 
 #include <vector>
-#include "anchor.hpp"
 
 #include "scripts/json.hpp"
 using json = nlohmann::json;
 using namespace nlohmann::literals;
 
-/**
- * @brief Anchor management vector
- *
- * Extends the default std::vector.
- */
 class AnchorList
 {
 private:
@@ -23,6 +17,12 @@ public:
    */
   AnchorList();
 
+
+  /**
+   * @brief Returns the the complete anchor list in JSON.
+   *
+   * @return The JSON object.
+   */
   json getAnchorList();
 
   /**
@@ -49,14 +49,6 @@ public:
    * @return false if the vector is not empty.
    */
   bool empty() const;
-  
-  /**
-   * @brief Returns a reference to the Anchor at specified location pos, with bounds checking.
-   *
-   * @param pos position of the Anchor to return.
-   * @return Reference to the requested Anchor.
-   */
-  Anchor at(const size_t pos) const;
 
   /**
    * @brief Erases all elements from the container. After this call, size() returns zero.
