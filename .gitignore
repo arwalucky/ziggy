@@ -1,2 +1,4 @@
-/.vscode
-a.out
+/.vscode/**
+.vscode/**
+**/a.out
+*/a.out
