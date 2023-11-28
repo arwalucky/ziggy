@@ -117,7 +117,23 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
         printf("%s\n", topicName);
         EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED, message);
     }
+    else if (strcmp(topicName, "newTag") == 0)
+    {
+        std::string s = (char *)message->payload;
+        std::string var1 = parseData(s, "ANCHORID");
+        std::string var2 = parseData(s, "TAGID");
+        std::string var3 = parseData(s, "DISTANCE");
 
+        if(TagList::isInList(var2))
+        {
+            TagList::addAnchor(var2, var1);
+        }
+        else
+        {
+            TagList(var2, json::array());
+            TagList::addAnchor(var2, var1);
+        }
+    }
     // set the space free again
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -132,8 +148,6 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token)
 
 void MQTT_Client::handleEvent(EventType event, void *message)
 {
-    auto data = static_cast<MQTTClient_message *>(message);
-
     switch (event)
     {
     case ANCHOR_FOUND:

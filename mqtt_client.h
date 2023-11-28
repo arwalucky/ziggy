@@ -1,5 +1,7 @@
 #include "MQTTClient.h"
 #include "event_handling/event_manager.hpp"
+#include "scripts/auxiliary_functions.hpp"
+#include "tag_list.hpp"
 
 #include "colours.h"
 // #include "redis_client.h"
