@@ -1,5 +1,5 @@
 #include "redis_client.h"
-
+#include <time.h>
 Database::Database(sw::redis::Redis &redis) : EventListener()
 {
     // registers itself as a listener
@@ -51,8 +51,9 @@ bool Database::checkAnchorList(MQTTClient_message *data)
     }
 
     //TODO: make dynamic
-    AnchorList(str, 1, 3, 3);
-    this->redis->command<void>("JSON.SET", "doc", ".", anchors.dump());
+    AnchorList(str, rand()%15, rand()%13, rand()%1000);
+    anchors = AnchorList::getAnchorList();
+    this->redis->command<void>("JSON.SET", "anchors", ".", anchors.dump());
 
     return false;
 }
