@@ -1,11 +1,15 @@
 #include "mqtt_client.h"
 
-// TODO: change rc to sth that makes sense
-MQTT_Client::MQTT_Client(const char *url, const char *clientid, sw::redis::Redis &redis) : EventListener()
-{
+MQTTClient MQTT_Client::client = NULL;
+MQTTClient_connectOptions MQTT_Client::connectionOptions = MQTTClient_connectOptions_initializer;
+MQTTClient_message MQTT_Client::publishMessage = MQTTClient_message_initializer;
+MQTTClient_deliveryToken MQTT_Client::token;
+char* const MQTT_Client::subscriptions = {};
 
-    this->redis = &redis;
-    this->clientid = clientid;
+// TODO: change rc to sth that makes sense
+MQTT_Client::MQTT_Client(const char *url, const char *clientid) : EventListener()
+{
+    client = NULL;
     int rc;
     // Creating an MQTT client
     if (rc = MQTTClient_create(&client, url, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL) != MQTTCLIENT_SUCCESS)
@@ -27,8 +31,6 @@ MQTT_Client::MQTT_Client(const char *url, const char *clientid, sw::redis::Redis
         printf("Callbacks set \n");
     }
     EventManager::getInstance().dispatchEvent(MQTT_CONNECTED, NULL);
-
-
     EventManager::getInstance().registerListener(ANCHOR_FOUND, this);
     EventManager::getInstance().registerListener(ANCHOR_REGISTERED, this);
 }
@@ -89,10 +91,24 @@ void MQTT_Client::subscribe(const char *topic)
         }
     }
 }
+
+void MQTT_Client::subscribeMany(char* const* topics)
+{
+    // int rc;
+    // int length = topics.length();
+    // if ((rc = MQTTClient_subscribeMany(client, length ,topics, 0) != MQTTCLIENT_SUCCESS))
+    // {
+    //     printf("Failed to subscribe. Error code: %i \n", rc);
+    // }
+    // else
+    // { 
+
+    // }
+
+}
+
 void MQTT_Client::forwardMessage(const char *message)
 {
-    printf("here");
-    redis->publish("key", message);
 }
 
 //? dont understand https://stackoverflow.com/questions/50826532/pahomqtt-assign-events/50827163#50827163
@@ -105,7 +121,9 @@ void connectionLost(void *context, char *reason)
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
-    
+
+// TODO: should I be doing  this here or should I create a different class/function that deals w the messages? 
+
     if (strcmp(topicName, (char *)"register") == 0)
     {
         printf("%s \n", topicName);
@@ -124,7 +142,7 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
         std::string var2 = parseData(s, "TAGID");
         std::string var3 = parseData(s, "DISTANCE");
 
-        if(TagList::isInList(var2))
+        if (TagList::isInList(var2))
         {
             TagList::addAnchor(var2, var1);
         }
@@ -134,7 +152,6 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
             TagList::addAnchor(var2, var1);
         }
     }
-    // set the space free again
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;

@@ -43,10 +43,11 @@ int main()
 
 	Database redis1(redis);
 
-	MQTT_Client mqttClient(url, clientid, redis);
-	mqttClient.connect();
-	mqttClient.publish(payload, "ziggy", clientid);
-	mqttClient.subscribe("#");
+	MQTT_Client(url, clientid);
+	MQTT_Client::connect();
+	MQTT_Client::publish(payload, "ziggy", clientid);
+	MQTT_Client::subscribe("#");
+
 
 exit:
 	return 0;
