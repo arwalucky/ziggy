@@ -149,10 +149,19 @@ $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
 	$(CXX) $(OBJECTS) $(LDFLAGS) -o $@
 
-	
+
+
+
+
+all: $(EXE)
+	@echo Build complete for $(ECHO_MESSAGE)
 	
 $(BUILD_DIR):
 	mkdir $@		
+
+$(EXE): $(OBJS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS) 
+
 
 #######################################
 # clean up
