@@ -1,19 +1,27 @@
+#ifndef MQTT_CLIENT_H
+#define MQTT_CLIENT_H
+
+
+
 #include "MQTTClient.h"
-#include "event_handling/event_manager.hpp"
 #include "scripts/auxiliary_functions.hpp"
 #include "tag_list.hpp"
-
+#include "redis_client.h"
 #include "colours.h"
-
+#include "scripts/json.hpp"
+using json = nlohmann::json;
+using namespace nlohmann::literals;
 
 #define MQTT_CLIENT_H
 
 inline MQTTClient_deliveryToken deliveredToken;
 
-class MQTT_Client : public EventListener
+class MQTT_Client 
 {
 private:
-	const char *clientid;
+	static const char *clientid;
+
+    static json data;
 
 public:
     static MQTTClient client;
@@ -30,9 +38,17 @@ public:
     static void subscribe(const char *topic);
     static void subscribeMany(char* const* topics);
     void forwardMessage(const char *message);
-    void handleEvent(EventType event, void *message);
+
+
+    static void checkAndAcknowledgeAnchor(MQTTClient_message *data);
+
+    static void packageData(std::string anchorID, std::string tagID, std::string distance);
+
 };
 
 void connectionLost(void *context, char *reason);
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
 void messageDelivered(void *context, MQTTClient_deliveryToken token);
+
+
+#endif

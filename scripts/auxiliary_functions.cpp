@@ -9,7 +9,11 @@ std::string parseData(std::string str, std::string FLAG)
     int counter = 0;
     std::string str1;
 
-    if(FLAG == "DISTANCE")
+    if (FLAG == "TIMESTAMP")
+    {
+        counter = 3;
+    }
+    else if(FLAG == "DISTANCE")
     {
         counter = 2;
     }

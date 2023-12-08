@@ -38,8 +38,6 @@ CPP_SOURCES =  \
 main.cpp \
 redis_client.cpp \
 mqtt_client.cpp \
-event_handling/event_manager.cpp \
-event_handling/event_listener.cpp \
 anchorList.cpp \
 tag_list.cpp \
 scripts/auxiliary_functions.cpp 
@@ -101,7 +99,7 @@ CFLAGS =   $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall
 
 # TODO: GET RID OF WARNINGS -> C++2a
 # TODO: Compile ERROR FOR c++>14 WITH BLOCK MANAGER FIND FUNCTION
-CXXFLAGS =   $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall  -std=c++17
+CXXFLAGS =   $(C_DEFS) $(C_INCLUDES) $(OPT) -g -Wall  -std=c++17
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
@@ -160,7 +158,7 @@ $(BUILD_DIR):
 	mkdir $@		
 
 $(EXE): $(OBJS)
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS) 
+	$(CXX) -o -g $@ $^ $(CXXFLAGS) $(LIBS) 
 
 
 #######################################

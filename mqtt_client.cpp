@@ -4,15 +4,19 @@ MQTTClient MQTT_Client::client = NULL;
 MQTTClient_connectOptions MQTT_Client::connectionOptions = MQTTClient_connectOptions_initializer;
 MQTTClient_message MQTT_Client::publishMessage = MQTTClient_message_initializer;
 MQTTClient_deliveryToken MQTT_Client::token;
-char* const MQTT_Client::subscriptions = {};
+
+const char *MQTT_Client::clientid = "";
+
+json MQTT_Client::data = json::array();
 
 // TODO: change rc to sth that makes sense
-MQTT_Client::MQTT_Client(const char *url, const char *clientid) : EventListener()
+MQTT_Client::MQTT_Client(const char *url, const char *clientid)
 {
-    client = NULL;
+    MQTT_Client::clientid = clientid;   
+
     int rc;
     // Creating an MQTT client
-    if (rc = MQTTClient_create(&client, url, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_create(&client, url, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
     }
@@ -22,7 +26,7 @@ MQTT_Client::MQTT_Client(const char *url, const char *clientid) : EventListener(
     }
 
     // Setting callback funcitons:
-    if (rc = MQTTClient_setCallbacks(client, NULL, connectionLost, messageArrived, messageDelivered) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_setCallbacks(client, NULL, connectionLost, messageArrived, messageDelivered)) != MQTTCLIENT_SUCCESS)
     {
         printf("Callbacks not set\n");
     }
@@ -30,9 +34,7 @@ MQTT_Client::MQTT_Client(const char *url, const char *clientid) : EventListener(
     {
         printf("Callbacks set \n");
     }
-    EventManager::getInstance().dispatchEvent(MQTT_CONNECTED, NULL);
-    EventManager::getInstance().registerListener(ANCHOR_FOUND, this);
-    EventManager::getInstance().registerListener(ANCHOR_REGISTERED, this);
+
 }
 
 void MQTT_Client::connect()
@@ -92,7 +94,7 @@ void MQTT_Client::subscribe(const char *topic)
     }
 }
 
-void MQTT_Client::subscribeMany(char* const* topics)
+void MQTT_Client::subscribeMany(char *const *topics)
 {
     // int rc;
     // int length = topics.length();
@@ -101,10 +103,9 @@ void MQTT_Client::subscribeMany(char* const* topics)
     //     printf("Failed to subscribe. Error code: %i \n", rc);
     // }
     // else
-    // { 
+    // {
 
     // }
-
 }
 
 void MQTT_Client::forwardMessage(const char *message)
@@ -122,22 +123,20 @@ void connectionLost(void *context, char *reason)
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
 
-// TODO: should I be doing  this here or should I create a different class/function that deals w the messages? 
-
     if (strcmp(topicName, (char *)"register") == 0)
     {
         printf("%s \n", topicName);
         printf("%*s \n", message->payloadlen, (char *)message->payload);
-        EventManager::getInstance().dispatchEvent(NEW_ANCHOR, message);
+        MQTT_Client::checkAndAcknowledgeAnchor(message);
     }
     else if (strcmp(topicName, "ziggy") == 0)
     {
         printf("%s\n", topicName);
-        EventManager::getInstance().dispatchEvent(MQTT_MESSAGE_RECEIVED, message);
     }
     else if (strcmp(topicName, "newTag") == 0)
     {
         std::string s = (char *)message->payload;
+        std::string var0 = parseData(s, "TIMESTAMP");
         std::string var1 = parseData(s, "ANCHORID");
         std::string var2 = parseData(s, "TAGID");
         std::string var3 = parseData(s, "DISTANCE");
@@ -152,9 +151,38 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
             TagList::addAnchor(var2, var1);
         }
     }
+    else if (strcmp(topicName, "tagData") == 0)
+    {
+        std::string s = (char *)message->payload;
+        // std::string var0 = parseData(s, "TIMESTAMP");
+        std::string var1 = parseData(s, "ANCHORID");
+        std::string var2 = parseData(s, "TAGID");
+        std::string var3 = parseData(s, "DISTANCE");
+        MQTT_Client::packageData(var1, var2, var3);
+    }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
+}
+
+void MQTT_Client::packageData(std::string anchorID, std::string tagID, std::string distance)
+{
+
+    json temp = json::array();
+
+    temp.push_back({{"anchorID", anchorID},
+                    {"tagID", tagID},
+                    {"coordinates", {{"x", distance}, {"y", distance}}}});
+
+    if (MQTT_Client::data.size() >= 10)
+    {
+        std::cout << "nough" << std::endl;
+    }
+    else
+    {	
+        MQTT_Client::data.push_back(temp);
+        Database::redis.publish("test","test");
+    }
 }
 
 void messageDelivered(void *context, MQTTClient_deliveryToken token)
@@ -163,20 +191,30 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token)
     deliveredToken = token;
 }
 
-void MQTT_Client::handleEvent(EventType event, void *message)
+void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
 {
-    switch (event)
+    std::string str = (char *)data->payload;
+    json anchors = AnchorList::getAnchorList();
+    bool found = false;
+
+    for (auto &[key, value] : anchors.items())
     {
-    case ANCHOR_FOUND:
-        publish("accepted", "register/ACK", this->clientid);
-        break;
-
-    case ANCHOR_REGISTERED:
-        publish("registered", "register/ACK", this->clientid);
-
-        break;
-
-    default:
-        break;
+        if (value["id"] == str)
+        {
+            found = true;
+        }
     }
-};
+
+    if (found) {
+        publish("accepted", "register/ACK", MQTT_Client::clientid);
+        return;
+    }
+
+    //TODO: make dynamic
+    AnchorList(str, rand()%15, rand()%13, rand()%1000);
+    anchors = AnchorList::getAnchorList();
+    Database::redis.command<void>("JSON.SET", "anchors", ".", anchors.dump());
+    publish("registered", "register/ACK",  MQTT_Client::clientid);
+     
+    return;
+}

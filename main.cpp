@@ -17,11 +17,9 @@ using namespace nlohmann::literals;
 
 int main()
 {
+	Database();
 
-	auto redis = Redis("tcp://127.0.0.1:6379");
-
-	// gets from redis and saves locally
-	auto anchors = redis.command<OptionalString>("JSON.GET", "anchors");
+	auto anchors = Database::redis.command<OptionalString>("JSON.GET", "anchors");
 	if (anchors)
 	{
 		json anchorsTemp = json::parse(*anchors);
@@ -33,15 +31,12 @@ int main()
 
 	// TODO: get registration data from Anchor with its location, timestamp and id and send it to redis
 
-	// Create a subscriber object.
-	auto sub = redis.subscriber();
 
 	const char *url = "localhost:1883";
 	const char *clientid = "ziggy";
 	const char *payload = "test";
 	const char *topic = "#";
 
-	Database redis1(redis);
 
 	MQTT_Client(url, clientid);
 	MQTT_Client::connect();
