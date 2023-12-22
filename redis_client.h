@@ -1,23 +1,25 @@
+#ifndef DATABASE_HPP
+#define DATABASE_HPP
+
 #include <iostream>
 #include <algorithm>
-#include "event_handling/event_manager.hpp"
 #include "MQTTClient.h"
 #include "anchorList.hpp"
 
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
 
-#define MQTT_CLIENT_H
+#define DATABASE_H
 
-class Database : public EventListener
+class Database 
 {
 private:
-    sw::redis::Redis *redis;
-
 public:
-    Database(sw::redis::Redis &redis);
-    
-    void handleEvent(EventType event, void *message);
-    bool checkAnchorList(MQTTClient_message *data);
+    static sw::redis::Redis redis;
+
+    Database();
+    static void setData(std::string key, std::string message);
+    static json getData();
 };
 
+#endif

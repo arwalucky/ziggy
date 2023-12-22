@@ -31,3 +31,12 @@ make install
 
 cd ..
 ``
+
+
+
+
+How the sytem works:: 
+
+
+Start RedisJSON in a docker container
+Start MQTT broker at 1883
