@@ -1,2 +1,6 @@
-.vscode/
-*.out
+/.vscode/**
+.vscode/**
+**/a.out
+*/a.out
+*/build
+/build/**
