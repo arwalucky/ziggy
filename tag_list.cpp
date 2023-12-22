@@ -11,6 +11,7 @@ TagList::TagList(std::string id, json x)
       {"id", id},
       {"anchors", x}
   });
+  std::cout << "Added tag" << tagList.dump() << std::endl;
 }
 
 
@@ -37,11 +38,12 @@ void TagList::addAnchor(std::string id, std::string anchorID)
       {
         if (value == anchorID)
         {
+          std::cout << "found anchor" << value << std::endl;
           return;
         }
       }
       value["anchors"].push_back(anchorID);
-      std::cout << "found" << value["anchors"] << std::endl;
+      std::cout << "Added anchor" << value << std::endl;
     }
   }
 };

@@ -5,24 +5,20 @@ MQTTClient_connectOptions MQTT_Client::connectionOptions = MQTTClient_connectOpt
 MQTTClient_message MQTT_Client::publishMessage = MQTTClient_message_initializer;
 MQTTClient_deliveryToken MQTT_Client::token;
 
-const char *MQTT_Client::clientid = "";
+const char *MQTT_Client::clientid = "ziggy";
+const char *MQTT_Client::url = "localhost:1883";
 
 json MQTT_Client::data = json::array();
 
 // TODO: change rc to sth that makes sense
-MQTT_Client::MQTT_Client(const char *url, const char *clientid)
+MQTT_Client::MQTT_Client()
 {
-    MQTT_Client::clientid = clientid;   
-
     int rc;
+
     // Creating an MQTT client
     if ((rc = MQTTClient_create(&client, url, clientid, MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to create client, return code %d\n", rc);
-    }
-    else
-    {
-        printf("woopsi maceroni, I am connected \n");
     }
 
     // Setting callback funcitons:
@@ -30,34 +26,19 @@ MQTT_Client::MQTT_Client(const char *url, const char *clientid)
     {
         printf("Callbacks not set\n");
     }
-    else
-    {
-        printf("Callbacks set \n");
-    }
-
-}
-
-void MQTT_Client::connect()
-{
-    int rc;
     if ((rc = MQTTClient_connect(client, &connectionOptions)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
         rc = EXIT_FAILURE;
     }
-    else
-    {
-        printf("Connected to MQTT \n");
-    }
-};
+}
 
-void MQTT_Client::publish(const char *payload, const char *topic, const char *clientid)
+void MQTT_Client::publish(const char *payload, const char *topic)
 {
-
-    // TODO : check if relevant
-    //? somehow doesnt work without char*
     publishMessage.payload = (char *)payload;
     publishMessage.payloadlen = (int)strlen(payload);
+
+    //TODO: eventually take arguments for these
     publishMessage.qos = 0;
     publishMessage.retained = 0;
     deliveredToken = 0;
@@ -69,7 +50,7 @@ void MQTT_Client::publish(const char *payload, const char *topic, const char *cl
     }
     else
     {
-        printf("Waiting for topic %s in topic %s \n", payload, topic);
+        printf("Published %s in topic %s \n", payload, topic);
     }
 }
 
@@ -94,52 +75,28 @@ void MQTT_Client::subscribe(const char *topic)
     }
 }
 
-void MQTT_Client::subscribeMany(char *const *topics)
-{
-    // int rc;
-    // int length = topics.length();
-    // if ((rc = MQTTClient_subscribeMany(client, length ,topics, 0) != MQTTCLIENT_SUCCESS))
-    // {
-    //     printf("Failed to subscribe. Error code: %i \n", rc);
-    // }
-    // else
-    // {
-
-    // }
-}
-
-void MQTT_Client::forwardMessage(const char *message)
-{
-}
 
 //? dont understand https://stackoverflow.com/questions/50826532/pahomqtt-assign-events/50827163#50827163
-
-void connectionLost(void *context, char *reason)
-{
-    printf("ConnectionLost\n");
-    printf("Reason: %s\n", reason);
-}
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
 
-    if (strcmp(topicName, (char *)"register") == 0)
+    if (strcmp(topicName, (char *)"register/Anchor") == 0)
     {
-        printf("%s \n", topicName);
-        printf("%*s \n", message->payloadlen, (char *)message->payload);
+        std::cout << (char *)message->payload << std::endl;
         MQTT_Client::checkAndAcknowledgeAnchor(message);
     }
-    else if (strcmp(topicName, "ziggy") == 0)
-    {
-        printf("%s\n", topicName);
-    }
-    else if (strcmp(topicName, "newTag") == 0)
+    else if (strcmp(topicName, "register/Tag") == 0)
     {
         std::string s = (char *)message->payload;
-        std::string var0 = parseData(s, "TIMESTAMP");
+        std::cout << s << std::endl;  
+        // std::string var0 = parseData(s, "TIMESTAMP");
         std::string var1 = parseData(s, "ANCHORID");
         std::string var2 = parseData(s, "TAGID");
-        std::string var3 = parseData(s, "DISTANCE");
+        // std::string var3 = parseData(s, "DISTANCE");
+        std::cout << "ANCHORID: " << var1 << std::endl;
+        std::cout << "TAGID: " << var2 << std::endl;
+
 
         if (TagList::isInList(var2))
         {
@@ -147,7 +104,7 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
         }
         else
         {
-            TagList(var2, json::array());
+            TagList(var2, var1);
             TagList::addAnchor(var2, var1);
         }
     }
@@ -167,7 +124,6 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 
 void MQTT_Client::packageData(std::string anchorID, std::string tagID, std::string distance)
 {
-
     json temp = json::array();
 
     temp.push_back({{"anchorID", anchorID},
@@ -176,19 +132,13 @@ void MQTT_Client::packageData(std::string anchorID, std::string tagID, std::stri
 
     if (MQTT_Client::data.size() >= 10)
     {
-        std::cout << "nough" << std::endl;
+        Database::redis.publish("whatever", data.dump());
+        MQTT_Client::data.clear();
     }
     else
     {	
         MQTT_Client::data.push_back(temp);
-        Database::redis.publish("test","test");
     }
-}
-
-void messageDelivered(void *context, MQTTClient_deliveryToken token)
-{
-    printf("Message delivered with token: %d\n", token);
-    deliveredToken = token;
 }
 
 void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
@@ -206,7 +156,7 @@ void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
     }
 
     if (found) {
-        publish("accepted", "register/ACK", MQTT_Client::clientid);
+        publish("accepted", "register/AnchorACK");
         return;
     }
 
@@ -214,7 +164,20 @@ void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
     AnchorList(str, rand()%15, rand()%13, rand()%1000);
     anchors = AnchorList::getAnchorList();
     Database::redis.command<void>("JSON.SET", "anchors", ".", anchors.dump());
-    publish("registered", "register/ACK",  MQTT_Client::clientid);
+
+    publish("registered", "register/AnchorACK");
      
     return;
+}
+
+void connectionLost(void *context, char *reason)
+{
+    printf("ConnectionLost\n");
+    printf("Reason: %s\n", reason);
+}
+
+void messageDelivered(void *context, MQTTClient_deliveryToken token)
+{
+    printf("Message delivered with token: %d\n", token);
+    deliveredToken = token;
 }

@@ -20,34 +20,65 @@ class MQTT_Client
 {
 private:
 	static const char *clientid;
-
+    static const char *url;
     static json data;
 
 public:
-    static MQTTClient client;
 
-    static char* const  subscriptions;
+    MQTT_Client();
+    static MQTTClient client;
     static MQTTClient_connectOptions connectionOptions;
     static MQTTClient_message publishMessage;
     static MQTTClient_deliveryToken token;
 
+    /* @brief Publishes a message to a topic
+     * 
+     * @param payload The message to be published
+     * @param topic The topic to publish to
+    */
+    static void publish(const char *payload, const char *topic);
 
-    MQTT_Client(const char *url, const char *clientid);
-    static void connect();
-    static void publish(const char *payload, const char *topic, const char *clientid);
+    /* @brief Subscribes to a topic
+     * 
+     * @param topic The topic to subscribe to
+    */
     static void subscribe(const char *topic);
-    static void subscribeMany(char* const* topics);
-    void forwardMessage(const char *message);
 
 
+    /* @brief Checks if the anchor is already found,  if not, adds it to the system and database and sends acknowledgment
+     * @param data The anchor to be checked
+    */
     static void checkAndAcknowledgeAnchor(MQTTClient_message *data);
 
+    /* @brief Checks if the tag is already found in the system and if not, adds it to the system anddatabase
+     * 
+     * @param data The tag to be checked
+    */
     static void packageData(std::string anchorID, std::string tagID, std::string distance);
 
 };
 
+/* @brief Callback function for when the connection is lost
+ * 
+ * @param context The context of the connection
+ * @param reason The reason for the connection loss
+*/
 void connectionLost(void *context, char *reason);
+
+/* @brief Callback function for when a message arrives
+ * 
+ * @param context The context of the connection
+ * @param topicName The name of the topic
+ * @param topicLength The length of the topic
+ * @param message The message that arrived
+*/
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
+
+/* @brief Callback function for when a message is delivered
+ * 
+ * @param context The context of the connection
+ * @param token The token of the message
+*/
 void messageDelivered(void *context, MQTTClient_deliveryToken token);
 
 

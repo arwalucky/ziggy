@@ -4,7 +4,7 @@
 std::string parseData(std::string str, std::string FLAG)
 {
     std::string s = str;
-    std::string delimiter = ">=";
+    std::string delimiter = "||";
 
     int counter = 0;
     std::string str1;
@@ -39,16 +39,10 @@ std::string parseData(std::string str, std::string FLAG)
         {
             str1 = s.substr(0, pos);
             s.erase(0, pos + delimiter.length());
-
         }
          s.erase(0, pos + delimiter.length());
          counter--;
     }
 
     return str1;
-}
-
-int sum (int a, int b)
-{
-    return a + b;
 }
