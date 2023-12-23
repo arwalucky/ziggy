@@ -8,6 +8,7 @@
 #include "colours.h"
 #include "mqtt_client.h"
 #include "redis_client.h"
+
 #include "anchorList.hpp"
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
@@ -15,13 +16,16 @@ using namespace sw::redis;
 #include "scripts/json.hpp"
 using json = nlohmann::json;
 using namespace nlohmann::literals;
+#include "sqlite3.hpp" 
+
+
 
 int main()
 {
 	Database();
-	
-	//get previously stored anchors from redis 
-	// would be useful for when the server is restarted
+
+	// get previously stored anchors from redis
+	//  would be useful for when the server is restarted
 	auto anchors = Database::redis.command<OptionalString>("JSON.GET", "anchors");
 	if (anchors)
 	{
@@ -32,31 +36,38 @@ int main()
 		}
 	}
 
-	AnchorList("AAAA1", 2, 9, 0);
-	AnchorList("AAAA2", 7, 7, 0);
-	AnchorList("AAAA3", 15, 4.5, 0);
-	AnchorList("AAAA4", 11, 8.33, 0);
-	AnchorList("AAAA5", 6, 3, 0);
-	AnchorList("AAAA6", 13, 1, 0);
-	AnchorList("AAAA7", 12, 11, 0);
-	AnchorList("AAAA8", 2, 4, 0);
+	// const char *columns = "*";
+	// const char *table = "COMPANY";
+	// const char *condition = "";
+
+	// sqlDB.SQLselect(columns, table, condition);
+	// // sqlDB.SQLselect("*", "Company", "");
 
 
-	json temp = json::array();
-	temp = AnchorList::getAnchorList();
-	Database::redis.command<void>("JSON.SET", "anchors", ".", temp.dump());
+	// AnchorList("AAAA1", 2, 9, 0);
+	// AnchorList("AAAA2", 7, 7, 0);
+	// AnchorList("AAAA3", 15, 4.5, 0);
+	// AnchorList("AAAA4", 11, 8.33, 0);
+	// AnchorList("AAAA5", 6, 3, 0);
+	// AnchorList("AAAA6", 13, 1, 0);
+	// AnchorList("AAAA7", 12, 11, 0);
+	// AnchorList("AAAA8", 2, 4, 0);
 
-	Database::redis.publish("newAnchor", "test");
+	// json temp = json::array();
+	// temp = AnchorList::getAnchorList();
+	// Database::redis.command<void>("JSON.SET", "anchors", ".", temp.dump());
 
-	Database::redis.publish("newTag", "tagID");
-	Database::redis.publish("newTag", "tagID1");
+	// Database::redis.publish("newAnchor", "test");
 
-	while(true)
-	{
-		Database::redis.publish("newRange", "tagID;AAAA1=2;AAAA2=3;AAAA3=4;AAAA4=5;AAAA5=6;AAAA6=7;AAAA7=8");
-		Database::redis.publish("newRange", "tagID1;AAAA1=2;AAAA2=3;AAAA5=6;AAAA6=7");
-		usleep(100000);
-	}
+	// Database::redis.publish("newTag", "tagID");
+	// Database::redis.publish("newTag", "tagID1");
+
+	// while (true)
+	// {
+	// 	Database::redis.publish("newRange", "tagID;AAAA1=2;AAAA2=3;AAAA3=4;AAAA4=5;AAAA5=6;AAAA6=7;AAAA7=8");
+	// 	Database::redis.publish("newRange", "tagID1;AAAA1=2;AAAA2=3;AAAA5=6;AAAA6=7");
+	// 	usleep(100000);
+	// }
 	MQTT_Client();
 
 	MQTT_Client::subscribe("#");
