@@ -10,13 +10,8 @@ using namespace nlohmann::literals;
 class TagList
 {
 protected:
-  std::string id;
-  float x;
-  float y;
-  unsigned int timestamp;
-
-public:
   static json tagList;
+public:
   /**
    * @brief Construct a new Anchor List object.
    */
@@ -24,7 +19,9 @@ public:
 
   static bool isInList(std::string id);
 
-  static  void addAnchor(std::string id, std::string anchorID);
+  static json getAnchorListForTag(std::string id);
+
+  static  void addAnchor(std::string id, std::string anchorID, std::string distance);
   /**
    * @brief Returns the the complete anchor list in JSON.
    *

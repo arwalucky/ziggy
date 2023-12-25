@@ -9,8 +9,6 @@
 #include <sw/redis++/redis++.h>
 using namespace sw::redis;
 
-#define DATABASE_H
-
 class Database 
 {
 private:

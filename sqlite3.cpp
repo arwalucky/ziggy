@@ -23,13 +23,12 @@ SQLite3::SQLite3()
 
 void SQLite3::SQLinsert()
 {
-    
+
 }
 
 void SQLite3::SQLselect(const char *columns, const char *table, const char *condition)
 {
     char prompt[100];
-
     strcpy(prompt, "SELECT ");
     strcat(prompt, columns);
     strcat(prompt, " FROM ");

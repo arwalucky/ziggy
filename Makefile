@@ -40,6 +40,7 @@ redis_client.cpp \
 mqtt_client.cpp \
 anchorList.cpp \
 tag_list.cpp \
+sqlite3.cpp \
 scripts/auxiliary_functions.cpp 
 
 # C sources
@@ -117,7 +118,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
 
 # libraries
-LIBS = -lpaho-mqtt3c  -lredis++   -lhiredis -pthread
+LIBS = -lpaho-mqtt3c  -lredis++   -lhiredis -pthread  -l sqlite3
 LIBDIR = -L/usr/local/lib 
 LDFLAGS =   $(LIBDIR) $(LIBS)
 

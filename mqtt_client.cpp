@@ -1,5 +1,6 @@
 #include "mqtt_client.h"
-
+#include <iostream>
+#include <vector>
 MQTTClient MQTT_Client::client = NULL;
 MQTTClient_connectOptions MQTT_Client::connectionOptions = MQTTClient_connectOptions_initializer;
 MQTTClient_message MQTT_Client::publishMessage = MQTTClient_message_initializer;
@@ -33,13 +34,13 @@ MQTT_Client::MQTT_Client()
     }
 }
 
-void MQTT_Client::publish(const char *payload, const char *topic)
+void MQTT_Client::publish(const char *payload, const char *topic, int qos)
 {
     publishMessage.payload = (char *)payload;
     publishMessage.payloadlen = (int)strlen(payload);
 
-    //TODO: eventually take arguments for these
-    publishMessage.qos = 0;
+    // TODO: eventually take arguments for these
+    publishMessage.qos = qos;
     publishMessage.retained = 0;
     deliveredToken = 0;
 
@@ -56,8 +57,9 @@ void MQTT_Client::publish(const char *payload, const char *topic)
 
 void MQTT_Client::subscribe(const char *topic)
 {
+
     int rc;
-    if ((rc = MQTTClient_subscribe(client, topic, 0) != MQTTCLIENT_SUCCESS))
+    if ((rc = MQTTClient_subscribe(client, topic, 1) != MQTTCLIENT_SUCCESS))
     {
         printf("Failed to subscribe. Error code: %i \n", rc);
     }
@@ -76,8 +78,6 @@ void MQTT_Client::subscribe(const char *topic)
 }
 
 
-//? dont understand https://stackoverflow.com/questions/50826532/pahomqtt-assign-events/50827163#50827163
-
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
 
@@ -86,59 +86,59 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
         std::cout << (char *)message->payload << std::endl;
         MQTT_Client::checkAndAcknowledgeAnchor(message);
     }
-    else if (strcmp(topicName, "register/Tag") == 0)
+    else if (strcmp(topicName, (char *)"position/Anchor") == 0)
     {
+
         std::string s = (char *)message->payload;
-        std::cout << s << std::endl;  
+
+        // parse details
+
         // std::string var0 = parseData(s, "TIMESTAMP");
-        std::string var1 = parseData(s, "ANCHORID");
-        std::string var2 = parseData(s, "TAGID");
-        // std::string var3 = parseData(s, "DISTANCE");
-        std::cout << "ANCHORID: " << var1 << std::endl;
-        std::cout << "TAGID: " << var2 << std::endl;
+        std::string anchor_id = parseData(s, "ANCHORID");
+        std::string tag_id = parseData(s, "TAGID");
+        std::string distance = parseData(s, "DISTANCE");
 
+        // check if anchor is in list add or update
 
-        if (TagList::isInList(var2))
+        if (!(TagList::isInList(tag_id)))
         {
-            TagList::addAnchor(var2, var1);
+std::cout << "Tag not in list" << std::endl;
+            // TagList::addAnchor(tag_id, anchor_id, distance);
+            Database::redis.publish("newTag", tag_id);
         }
         else
         {
-            TagList(var2, var1);
-            TagList::addAnchor(var2, var1);
+            TagList::addAnchor(tag_id, anchor_id, distance);
+
+            std::string data = tag_id;
+
+            json temp = TagList::getTagList();
+            for (auto &[key, value] : temp.items())
+            {
+                if (value["id"] == tag_id)
+                {
+                    for (auto &[key1, value1] : value["anchors"].items())
+                    {
+                        data += ";" + value1["anchorID"].dump() + "=" + value1["distance"].dump();
+                    }
+                }
+            }
+            data.erase(
+                remove(data.begin(), data.end(), '\"'),
+                data.end());
+            std::cout << data << std::endl;
+
+            Database::redis.publish("newRange", data);
         }
     }
-    else if (strcmp(topicName, "tagData") == 0)
+    else if (strcmp(topicName, (char *)"register/Tag") == 0)
     {
-        std::string s = (char *)message->payload;
-        // std::string var0 = parseData(s, "TIMESTAMP");
-        std::string var1 = parseData(s, "ANCHORID");
-        std::string var2 = parseData(s, "TAGID");
-        std::string var3 = parseData(s, "DISTANCE");
-        MQTT_Client::packageData(var1, var2, var3);
+        std::cout << "tag registration" << std::endl;
     }
+
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
-}
-
-void MQTT_Client::packageData(std::string anchorID, std::string tagID, std::string distance)
-{
-    json temp = json::array();
-
-    temp.push_back({{"anchorID", anchorID},
-                    {"tagID", tagID},
-                    {"coordinates", {{"x", distance}, {"y", distance}}}});
-
-    if (MQTT_Client::data.size() >= 10)
-    {
-        Database::redis.publish("whatever", data.dump());
-        MQTT_Client::data.clear();
-    }
-    else
-    {	
-        MQTT_Client::data.push_back(temp);
-    }
 }
 
 void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
@@ -154,19 +154,19 @@ void MQTT_Client::checkAndAcknowledgeAnchor(MQTTClient_message *data)
             found = true;
         }
     }
-
-    if (found) {
-        publish("accepted", "register/AnchorACK");
+    if (found)
+    {
+        publish("accepted", "register/AnchorACK", 1);
         return;
     }
 
-    //TODO: make dynamic
-    AnchorList(str, rand()%15, rand()%13, rand()%1000);
+    // TODO: make dynamic
+    AnchorList(str, rand() % 15, rand() % 13, rand() % 1000);
     anchors = AnchorList::getAnchorList();
     Database::redis.command<void>("JSON.SET", "anchors", ".", anchors.dump());
 
-    publish("registered", "register/AnchorACK");
-     
+    publish("registered", "register/AnchorACK", 1);
+
     return;
 }
 

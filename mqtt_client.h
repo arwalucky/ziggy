@@ -36,7 +36,7 @@ public:
      * @param payload The message to be published
      * @param topic The topic to publish to
     */
-    static void publish(const char *payload, const char *topic);
+    static void publish(const char *payload, const char *topic, int qos);
 
     /* @brief Subscribes to a topic
      * 
@@ -44,17 +44,12 @@ public:
     */
     static void subscribe(const char *topic);
 
-
+    static void subscribeMany(char* const topic, int qos);
     /* @brief Checks if the anchor is already found,  if not, adds it to the system and database and sends acknowledgment
      * @param data The anchor to be checked
     */
     static void checkAndAcknowledgeAnchor(MQTTClient_message *data);
 
-    /* @brief Checks if the tag is already found in the system and if not, adds it to the system anddatabase
-     * 
-     * @param data The tag to be checked
-    */
-    static void packageData(std::string anchorID, std::string tagID, std::string distance);
 
 };
 

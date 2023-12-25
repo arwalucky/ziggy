@@ -5,13 +5,12 @@
 json TagList::tagList = json::array();
 
 
-TagList::TagList(std::string id, json x)
+TagList::TagList(std::string id, json anchors)
 {
   tagList.push_back({
       {"id", id},
-      {"anchors", x}
+      {"anchors", anchors}
   });
-  std::cout << "Added tag" << tagList.dump() << std::endl;
 }
 
 
@@ -24,26 +23,40 @@ bool TagList::isInList(std::string id)
       return true;
     }
   }
+  tagList.push_back({
+      {"id", id},
+      {"anchors", json::array()}
+  });
   return false;
 };
 
-
-void TagList::addAnchor(std::string id, std::string anchorID) 
+json TagList::getAnchorListForTag(std::string id)
 {
   for (auto &[key, value] : tagList.items())
   {
     if (value["id"] == id)
     {
-      for (auto &[key, value] : value["anchors"].items())
+      return value["anchors"];
+    }
+  }
+  return json::array();
+};
+
+void TagList::addAnchor(std::string id, std::string anchorID, std::string distance) 
+{
+  for (auto &[key, value] : tagList.items())
+  {
+    if (value["id"] == id)
+    {
+      for (auto &[key1, value1] : value["anchors"].items())
       {
-        if (value == anchorID)
+        if (value1["anchorID"] == anchorID)
         {
-          std::cout << "found anchor" << value << std::endl;
+          value1["distance"] = distance;
           return;
         }
       }
-      value["anchors"].push_back(anchorID);
-      std::cout << "Added anchor" << value << std::endl;
+      value["anchors"].push_back({{"anchorID", anchorID}, {"distance", distance}});
     }
   }
 };
