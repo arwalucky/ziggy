@@ -17,6 +17,9 @@ public:
     SQLite3();
     static void SQLinsert();
     static void SQLselect(const char *columns, const char *table, const char *condition);
+    static void insertAnchor(const char *id, const char * x, const char * y, const char * timestamp);
+    static void insertTag(const char *id, const char * timestamp);
+    static void addRange(const char *tag_id, const char *anchor_id, const char *distance, const char *timestamp);
 
 };
 
