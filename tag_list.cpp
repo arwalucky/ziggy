@@ -5,11 +5,12 @@
 json TagList::tagList = json::array();
 
 
-TagList::TagList(std::string id, json anchors)
+TagList::TagList(std::string id, json anchors, std::string timestamp)
 {
   tagList.push_back({
       {"id", id},
-      {"anchors", anchors}
+      {"anchors", anchors},
+      {"timestamp", timestamp}
   });
 }
 
@@ -23,10 +24,6 @@ bool TagList::isInList(std::string id)
       return true;
     }
   }
-  tagList.push_back({
-      {"id", id},
-      {"anchors", json::array()}
-  });
   return false;
 };
 
@@ -65,7 +62,6 @@ json TagList::getTagList()
 {
   return tagList;
 };
-
 
 size_t TagList::size() const
 {

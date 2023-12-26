@@ -15,7 +15,7 @@ public:
   /**
    * @brief Construct a new Anchor List object.
    */
-  TagList(std::string id, json x);
+  TagList(std::string id, json anchors, std::string timestamp);
 
   static bool isInList(std::string id);
 
