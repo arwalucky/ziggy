@@ -4,20 +4,20 @@
 std::string parseData(std::string str, std::string FLAG)
 {
     std::string s = str;
-    std::string delimiter = "||";
+    std::string delimiter = ";";
 
     int counter = 0;
     std::string str1;
 
-    if (FLAG == "TIMESTAMP")
+    if (FLAG == "TIMESTAMP" )
     {
         counter = 3;
     }
-    else if(FLAG == "DISTANCE")
+    else if(FLAG == "DISTANCE" || FLAG == "COOR_Y")
     {
         counter = 2;
     }
-    else if(FLAG == "TAGID")
+    else if(FLAG == "TAGID" || FLAG == "COOR_X")
     {
         counter = 1;
     }
