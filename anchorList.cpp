@@ -3,7 +3,7 @@
 json AnchorList::anchorList = json::array();
 
 
-AnchorList::AnchorList(std::string id, float x, float y, unsigned int timestamp)
+AnchorList::AnchorList(std::string id, float x, float y, std::string timestamp)
 {
   anchorList.push_back({
       {"id", id},
