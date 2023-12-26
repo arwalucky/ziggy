@@ -16,7 +16,7 @@ using namespace nlohmann::literals;
 
 inline MQTTClient_deliveryToken deliveredToken;
 
-class MQTT_Client 
+class MQTT 
 {
 private:
 	static const char *clientid;
@@ -25,7 +25,7 @@ private:
 
 public:
 
-    MQTT_Client();
+    MQTT();
     static MQTTClient client;
     static MQTTClient_connectOptions connectionOptions;
     static MQTTClient_message publishMessage;
@@ -44,37 +44,8 @@ public:
     */
     static void subscribe(const char *topic);
 
-    static void subscribeMany(char* const topic, int qos);
-    /* @brief Checks if the anchor is already found,  if not, adds it to the system and database and sends acknowledgment
-     * @param data The anchor to be checked
-    */
-    static void checkAndAcknowledgeAnchor(MQTTClient_message *data);
-
+    static void setCallbacks(MQTTClient_connectionLost *cl, MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc);
 
 };
-
-/* @brief Callback function for when the connection is lost
- * 
- * @param context The context of the connection
- * @param reason The reason for the connection loss
-*/
-void connectionLost(void *context, char *reason);
-
-/* @brief Callback function for when a message arrives
- * 
- * @param context The context of the connection
- * @param topicName The name of the topic
- * @param topicLength The length of the topic
- * @param message The message that arrived
-*/
-int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
-
-/* @brief Callback function for when a message is delivered
- * 
- * @param context The context of the connection
- * @param token The token of the message
-*/
-void messageDelivered(void *context, MQTTClient_deliveryToken token);
-
 
 #endif
