@@ -16,8 +16,8 @@ public:
     static sw::redis::Redis redis;
 
     Database();
-    static void setData(std::string key, std::string message);
-    static json getData();
+    static void setJSON(std::string key, json message);
+    static json getJSON(std::string key);
 };
 
 #endif
