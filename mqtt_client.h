@@ -7,7 +7,6 @@
 #include "scripts/auxiliary_functions.hpp"
 #include "tag_list.hpp"
 #include "redis_client.h"
-#include "colours.h"
 #include "scripts/json.hpp"
 using json = nlohmann::json;
 using namespace nlohmann::literals;
