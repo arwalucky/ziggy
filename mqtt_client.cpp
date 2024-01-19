@@ -49,6 +49,8 @@ void MQTT::publish(const char *payload, const char *topic, int qos)
     {
         printf("Couldnt publish message, error code: %i \n", rc);
     }
+
+    //TODO: remove eventually
     else
     {
         printf("Published %s in topic %s \n", payload, topic);
