@@ -21,12 +21,15 @@ public:
 
   static json getAnchorListForTag(std::string id);
 
-  static  void addAnchor(std::string id, std::string anchorID, std::string distance);
+  static  void updateRange(std::string id, std::string anchorID, std::string distance);
+  
   /**
    * @brief Returns the the complete anchor list in JSON.
    *
    * @return The JSON object.
    */
+
+  static void removeAnchor(std::string id, std::string anchorID);
   static json getTagList();
 
   /**

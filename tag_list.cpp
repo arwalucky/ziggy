@@ -39,7 +39,7 @@ json TagList::getAnchorListForTag(std::string id)
   return json::array();
 };
 
-void TagList::addAnchor(std::string id, std::string anchorID, std::string distance) 
+void TagList::updateRange(std::string id, std::string anchorID, std::string distance) 
 {
   for (auto &[key, value] : tagList.items())
   {
@@ -57,6 +57,25 @@ void TagList::addAnchor(std::string id, std::string anchorID, std::string distan
     }
   }
 };
+
+void TagList::removeAnchor(std::string id, std::string anchorID)
+{
+  for (auto &[key, value] : tagList.items())
+  {
+    if (value["id"] == id)
+    {
+      for (auto &[key1, value1] : value["anchors"].items())
+      {
+        if (value1["anchorID"] == anchorID)
+        {
+          value1["anchorID"].clear();
+          return;
+        }
+      }
+    }
+  }
+};
+
 
 json TagList::getTagList()
 {
