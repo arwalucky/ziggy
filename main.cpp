@@ -22,6 +22,12 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token);
 void connectionLost(void *context, char *reason);
 void checkAndAcknowledgeAnchor(MQTTClient_message *data);
 
+float r1 = std::rand() % 350;
+float r2 = std::rand() % 200;
+float r3 = std::rand() % 130;
+float r4 = std::rand() % 150;
+float r5 = std::rand() % 100;
+
 int main()
 {
 	Database();
@@ -40,8 +46,6 @@ int main()
 	else
 		Database::setJSON("anchors", json::object().dump());
 
-
-
 	SQLite3::insertAnchor("32523", "3", "5", "1703869755");
 	SQLite3::insertAnchor("32423", "4", "5", "1703869755");
 	SQLite3::insertAnchor("23452", "2", "7", "1703869755");
@@ -49,9 +53,7 @@ int main()
 	SQLite3::insertAnchor("23432", "5", "6", "1703869755");
 	SQLite3::insertAnchor("32452", "1", "9", "1703869755");
 
-
-	SQLite3::SQLselect("*", "ANCHORS", NULL);	
-	// SQLite3::SQLselect("*", "RANGES", NULL);
+	SQLite3::SQLselect("*", "ANCHORS", NULL);
 
 	std::cout << "---------------------" << std::endl;
 	// MQTT settings
@@ -79,7 +81,7 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 {
 
 	if (strcmp(topicName, (char *)"register/Anchor") == 0)
-	{ 
+	{
 		std::cout << (char *)message->payload << std::endl;
 		if (message->payloadlen < 1)
 		{
@@ -132,27 +134,27 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 
 			Database::redis.publish("newRange", data);
 
-			float r1 = std::rand()%700;
+			r1 = r1 + 1;
 			std::string s1 = std::to_string(r1);
-			float r2 = std::rand()%900;
+			r2 = r2 + 1;
 			std::string s2 = std::to_string(r2);
-			float r3 = std::rand()%1300;
+			r3 = r3 + 1;
 			std::string s3 = std::to_string(r3);
-			float r4 = std::rand()%400;
+			r4 = r4 + 1;
 			std::string s4 = std::to_string(r4);
-			float r5 = std::rand()%100;
+			r5 = r5 + 1;
 			std::string s5 = std::to_string(r5);
 
-			//one tag`s, 5 ranges
+			// one tag`s, 5 ranges
 
 			SQLite3::addRange(tag_id.c_str(), anchor_id.c_str(), distance.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "32523", s1.c_str() , timestamp.c_str());
+			SQLite3::addRange(tag_id.c_str(), "32523", s1.c_str(), timestamp.c_str());
 			SQLite3::addRange(tag_id.c_str(), "32423", s2.c_str(), timestamp.c_str());
 			SQLite3::addRange(tag_id.c_str(), "23445", s3.c_str(), timestamp.c_str());
 			SQLite3::addRange(tag_id.c_str(), "23432", s4.c_str(), timestamp.c_str());
 			SQLite3::addRange(tag_id.c_str(), "32452", s5.c_str(), timestamp.c_str());
 
-			std::cout<< "working" << std::endl;
+			std::cout << "working" << std::endl;
 		}
 	}
 	else if (strcmp(topicName, (char *)"deregister/Tag") == 0)
@@ -167,7 +169,6 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 		TagList::removeAnchor(tag_id, anchor_id);
 
 		json temp = TagList::getAnchorListForTag(tag_id);
-
 		if (!temp.size())
 		{
 			Database::redis.publish("removeTag", tag_id);
@@ -216,8 +217,7 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 	MQTT::publish("registered", "register/AnchorACK", 1);
 	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
 
-
-	std::cout << "Anchor registered" << std::endl;	
+	std::cout << "Anchor registered" << std::endl;
 
 	return;
 }
