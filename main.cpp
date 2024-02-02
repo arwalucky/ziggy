@@ -53,9 +53,6 @@ int main()
 	SQLite3::insertAnchor("23432", "5", "6", "1703869755");
 	SQLite3::insertAnchor("32452", "1", "9", "1703869755");
 
-	SQLite3::SQLselect("*", "ANCHORS", NULL);
-
-	std::cout << "---------------------" << std::endl;
 	// MQTT settings
 	MQTT();
 	MQTT::setCallbacks(connectionLost, messageArrived, messageDelivered);
@@ -67,29 +64,31 @@ int main()
 
 void connectionLost(void *context, char *reason)
 {
-	printf("ConnectionLost\n");
+	printf("Connection Lost\n");
 	printf("Reason: %s\n", reason);
 }
 
 void messageDelivered(void *context, MQTTClient_deliveryToken token)
 {
-	printf("Message delivered with token: %d\n", token);
 	deliveredToken = token;
 }
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
+	if (std::string_view{topicName, 15} == "register/Anchor"){
+		std::cout << "register/Anchor thing is working " << topicName  << std::endl;
+	}
 
-	if (strcmp(topicName, (char *)"register/Anchor") == 0)
+	if (std::string_view{topicName, 15} == "register/Anchor")
 	{
-		std::cout << (char *)message->payload << std::endl;
 		if (message->payloadlen < 1)
 		{
+			std::cout << "Retained message removed" << std::endl;
 			return 1;
 		}
 		checkAndAcknowledgeAnchor(message);
 	}
-	else if (strcmp(topicName, (char *)"position/Anchor") == 0)
+	else if (std::string_view{topicName, 15} == "position/Anchor")
 	{
 		std::string s = (char *)message->payload;
 
@@ -100,7 +99,7 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 
 		if (!(TagList::isInList(tag_id)))
 		{
-			std::cout << "Tag not in list" << std::endl;
+			std::cout << "New tag added" << std::endl;
 			TagList(tag_id, json::array(), timestamp);
 
 			// immediate tag update
@@ -111,7 +110,6 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 			Database::setJSON("tags", tags.dump());
 
 			SQLite3::insertTag(tag_id.c_str(), timestamp.c_str());
-			SQLite3::SQLselect("*", "tags", NULL);
 		}
 		else
 		{
@@ -157,7 +155,7 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 			std::cout << "working" << std::endl;
 		}
 	}
-	else if (strcmp(topicName, (char *)"deregister/Tag") == 0)
+	else if (std::string_view{topicName, 14} == "deregister/Tag")
 	{
 
 		std::cout << "deregister/Tag" << std::endl;
@@ -203,18 +201,16 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 	if (found)
 	{
 		MQTT::publish("accepted", "register/AnchorACK", 1);
-		SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
 		return;
 	}
 
-	// TODO: make dynamic
 	AnchorList(anchor_id, x, y, timestamp);
 
 	anchors = AnchorList::getAnchorList();
 	Database::setJSON("anchors", anchors.dump());
 	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
 
-	MQTT::publish("registered", "register/AnchorACK", 1);
+	MQTT::publish("accepted", "register/AnchorACK", 1);
 	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
 
 	std::cout << "Anchor registered" << std::endl;

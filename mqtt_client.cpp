@@ -11,7 +11,6 @@ const char *MQTT::url = "localhost:1883";
 
 json MQTT::data = json::array();
 
-// TODO: change rc to sth that makes sense
 MQTT::MQTT()
 {
     int rc;

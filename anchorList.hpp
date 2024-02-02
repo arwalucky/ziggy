@@ -8,15 +8,12 @@ using namespace nlohmann::literals;
 
 class AnchorList
 {
-protected: 
-  std::string id;
-  float x;
-  float y;
-  unsigned int timestamp;
+private: 
+  static json anchorList;
 
 public:
 
-  static json anchorList;
+
   /**
    * @brief Construct a new Anchor List object.
    */

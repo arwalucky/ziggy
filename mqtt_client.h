@@ -45,6 +45,7 @@ public:
 
     static void setCallbacks(MQTTClient_connectionLost *cl, MQTTClient_messageArrived *ma, MQTTClient_deliveryComplete *dc);
 
+
 };
 
 #endif

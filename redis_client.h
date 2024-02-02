@@ -18,8 +18,6 @@ public:
     Database();
     static void setJSON(std::string key, json message);
     static json getJSON(std::string key);
-
-
 };
 
 #endif
