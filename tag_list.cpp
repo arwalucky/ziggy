@@ -53,7 +53,9 @@ void TagList::updateRange(std::string id, std::string anchorID, std::string dist
           return;
         }
       }
+      
       value["anchors"].push_back({{"anchorID", anchorID}, {"distance", distance}});
+      std::cout << "AnchorID: " << anchorID << " Distance: " << distance << std::endl;
     }
   }
 };
@@ -64,14 +66,9 @@ void TagList::removeAnchor(std::string id, std::string anchorID)
   {
     if (value["id"] == id)
     {
-      for (auto &[key1, value1] : value["anchors"].items())
-      {
-        if (value1["anchorID"] == anchorID)
-        {
-          value1["anchorID"].clear();
-          return;
-        }
-      }
+
+      value["anchors"].erase(value["anchors"].find(anchorID), value["anchors"].end());
+      return;
     }
   }
 };

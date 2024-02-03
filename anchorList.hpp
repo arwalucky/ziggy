@@ -17,7 +17,7 @@ public:
   /**
    * @brief Construct a new Anchor List object.
    */
-  AnchorList(std::string id, float x, float y, std::string timestamp);
+  AnchorList(std::string id, float x, float y, const unsigned int timestamp);
 
 
   /**

@@ -14,10 +14,7 @@ SQLite3::SQLite3()
     {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
     }
-    else
-    {
-        fprintf(stderr, "Opened database successfully\n");
-    }
+
     sql = "CREATE TABLE anchors("
           "ID               CHAR(50) PRIMARY KEY     NOT NULL,"
           "X                CHAR(50)  NOT NULL,"
@@ -68,7 +65,6 @@ void SQLite3::insertAnchor(const char *id, const char *x, const char *y, const c
     strcat(prompt, ");");
 
     sql = prompt;
-    std::cout << sql << std::endl;  
     sqlite3_exec(db, sql, callback, 0, &zErrMsg);
 }
 
@@ -112,7 +108,6 @@ void SQLite3::SQLselect(const char *columns, const char *table, const char *cond
     strcat(prompt, ";");
 
     sql = prompt;
-    std::cout << sql << std::endl;
     sqlite3_exec(db, sql, callback, 0, &zErrMsg);
 }
 
