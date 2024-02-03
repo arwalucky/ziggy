@@ -22,13 +22,13 @@ MQTTClient_deliveryToken deliveredToken;
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
 void messageDelivered(void *context, MQTTClient_deliveryToken token);
 void connectionLost(void *context, char *reason);
-void checkAndAcknowledgeAnchor(MQTTClient_message *data);
-std::string parseData(std::string str, std::string FLAG);
+
 void handleRegisterAnchor(MQTTClient_message *message);
-
 void handlePositionAnchor(MQTTClient_message *message);
-
 void handleDeregisterTag(MQTTClient_message *message);
+
+std::string parseData(std::string str, std::string FLAG);
+
 
 int main()
 {
@@ -252,11 +252,21 @@ void handlePositionAnchor(MQTTClient_message *message)
 
 void handleDeregisterTag(MQTTClient_message *message)
 {
+
+
+	if (message->payloadlen < 1)
+	{
+		std::cout << "Retained message removed" << std::endl;
+		return;
+	}
 	std::cout << "deregister/Tag" << std::endl;
 	std::string s = (char *)message->payload;
 	std::string timestamp = parseData(s, "TIMESTAMP");
 	std::string anchor_id = parseData(s, "ANCHORID");
 	std::string tag_id = parseData(s, "TAGID");
+
+	std::string topic = "deregister/Tag/" + anchor_id + tag_id;
+	MQTT::publish("", topic.c_str(), 1);
 
 	TagList::removeAnchor(tag_id, anchor_id);
 

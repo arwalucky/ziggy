@@ -1,8 +1,6 @@
 #ifndef MQTT_CLIENT_H
 #define MQTT_CLIENT_H
 
-
-
 #include "MQTTClient.h"
 #include "tag_list.hpp"
 #include "redis_client.h"
@@ -12,7 +10,6 @@ using namespace nlohmann::literals;
 
 #define MQTT_CLIENT_H
 
-inline MQTTClient_deliveryToken deliveredToken;
 
 class MQTT 
 {
@@ -34,7 +31,7 @@ public:
      * @param payload The message to be published
      * @param topic The topic to publish to
     */
-    static void publish(const char *payload, const char *topic, int qos);
+    static void publish(const char *payload, const char *topic, int retained);
 
     /* @brief Subscribes to a topic
      * 
