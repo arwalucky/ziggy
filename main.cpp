@@ -22,11 +22,6 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token);
 void connectionLost(void *context, char *reason);
 void checkAndAcknowledgeAnchor(MQTTClient_message *data);
 
-float r1 = std::rand() % 350;
-float r2 = std::rand() % 200;
-float r3 = std::rand() % 130;
-float r4 = std::rand() % 150;
-float r5 = std::rand() % 100;
 
 int main()
 {
@@ -44,14 +39,10 @@ int main()
 		}
 	}
 	else
+	{
 		Database::setJSON("anchors", json::object().dump());
-
-	SQLite3::insertAnchor("32523", "3", "5", "1703869755");
-	SQLite3::insertAnchor("32423", "4", "5", "1703869755");
-	SQLite3::insertAnchor("23452", "2", "7", "1703869755");
-	SQLite3::insertAnchor("23445", "3", "0", "1703869755");
-	SQLite3::insertAnchor("23432", "5", "6", "1703869755");
-	SQLite3::insertAnchor("32452", "1", "9", "1703869755");
+		std::cout << "No anchors found" << std::endl;	
+	}
 
 	// MQTT settings
 	MQTT();
@@ -75,12 +66,10 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token)
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
-	if (std::string_view{topicName, 15} == "register/Anchor"){
-		std::cout << "register/Anchor thing is working " << topicName  << std::endl;
-	}
 
-	if (std::string_view{topicName, 15} == "register/Anchor")
+	if (std::string_view{topicName, 16} == "register/Anchor/")
 	{
+		std::cout << "register/Anchor" << topicName << std::endl;
 		if (message->payloadlen < 1)
 		{
 			std::cout << "Retained message removed" << std::endl;
@@ -132,32 +121,10 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 
 			Database::redis.publish("newRange", data);
 
-			r1 = r1 + 1;
-			std::string s1 = std::to_string(r1);
-			r2 = r2 + 1;
-			std::string s2 = std::to_string(r2);
-			r3 = r3 + 1;
-			std::string s3 = std::to_string(r3);
-			r4 = r4 + 1;
-			std::string s4 = std::to_string(r4);
-			r5 = r5 + 1;
-			std::string s5 = std::to_string(r5);
-
-			// one tag`s, 5 ranges
-
-			SQLite3::addRange(tag_id.c_str(), anchor_id.c_str(), distance.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "32523", s1.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "32423", s2.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "23445", s3.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "23432", s4.c_str(), timestamp.c_str());
-			SQLite3::addRange(tag_id.c_str(), "32452", s5.c_str(), timestamp.c_str());
-
-			std::cout << "working" << std::endl;
 		}
 	}
 	else if (std::string_view{topicName, 14} == "deregister/Tag")
 	{
-
 		std::cout << "deregister/Tag" << std::endl;
 		std::string s = (char *)message->payload;
 		std::string timestamp = parseData(s, "TIMESTAMP");
@@ -180,13 +147,15 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 
 void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 {
+
 	std::string s = (char *)data->payload;
 	std::string anchor_id = parseData(s, "ANCHORID");
 	std::string coor_x = parseData(s, "COOR_X");
 	float x = std::stof(coor_x);
 	std::string coor_y = parseData(s, "COOR_Y");
 	float y = std::stof(coor_y);
-	std::string timestamp = parseData(s, "TIMESTAMP");
+	std::string timestamp_str = parseData(s, "TIMESTAMP");
+	int timestamp = std::stof(timestamp_str);
 
 	json anchors = AnchorList::getAnchorList();
 	bool found = false;
@@ -200,7 +169,7 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 	}
 	if (found)
 	{
-		MQTT::publish("accepted", "register/AnchorACK", 1);
+		MQTT::publish("accepted", "register/AnchorACK", 0);
 		return;
 	}
 
@@ -208,10 +177,10 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 
 	anchors = AnchorList::getAnchorList();
 	Database::setJSON("anchors", anchors.dump());
-	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
+	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
 
-	MQTT::publish("accepted", "register/AnchorACK", 1);
-	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp.c_str());
+	MQTT::publish("accepted", "register/AnchorACK", 0);
+	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
 
 	std::cout << "Anchor registered" << std::endl;
 
