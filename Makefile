@@ -41,7 +41,6 @@ mqtt_client.cpp \
 anchorList.cpp \
 tag_list.cpp \
 sqlite3.cpp \
-scripts/auxiliary_functions.cpp 
 
 # C sources
 C_SOURCES =  

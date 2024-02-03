@@ -17,11 +17,18 @@ using json = nlohmann::json;
 using namespace nlohmann::literals;
 #include "sqlite3.hpp"
 
+MQTTClient_deliveryToken deliveredToken;
+
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message);
 void messageDelivered(void *context, MQTTClient_deliveryToken token);
 void connectionLost(void *context, char *reason);
 void checkAndAcknowledgeAnchor(MQTTClient_message *data);
+std::string parseData(std::string str, std::string FLAG);
+void handleRegisterAnchor(MQTTClient_message *message);
 
+void handlePositionAnchor(MQTTClient_message *message);
+
+void handleDeregisterTag(MQTTClient_message *message);
 
 int main()
 {
@@ -41,7 +48,7 @@ int main()
 	else
 	{
 		Database::setJSON("anchors", json::object().dump());
-		std::cout << "No anchors found" << std::endl;	
+		std::cout << "No anchors found" << std::endl;
 	}
 
 	// MQTT settings
@@ -64,80 +71,65 @@ void messageDelivered(void *context, MQTTClient_deliveryToken token)
 	deliveredToken = token;
 }
 
+std::string parseData(std::string str, std::string FLAG)
+{
+	std::string s = str;
+	std::string delimiter = ";";
+
+	int counter = 0;
+	std::string str1;
+
+	if (FLAG == "TIMESTAMP")
+	{
+		counter = 3;
+	}
+	else if (FLAG == "DISTANCE" || FLAG == "COOR_Y")
+	{
+		counter = 2;
+	}
+	else if (FLAG == "TAGID" || FLAG == "COOR_X")
+	{
+		counter = 1;
+	}
+	else if (FLAG == "ANCHORID")
+	{
+		counter = 0;
+	}
+	else
+	{
+		std::cout << "FLAG not found" << std::endl;
+		return 0;
+	}
+
+	size_t pos = 0;
+	std::string token;
+	while ((pos = s.find(delimiter)) != std::string::npos)
+	{
+		if (counter == 0)
+		{
+			str1 = s.substr(0, pos);
+			s.erase(0, pos + delimiter.length());
+		}
+		s.erase(0, pos + delimiter.length());
+		counter--;
+	}
+
+	return str1;
+}
+
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
 {
-
 	if (std::string_view{topicName, 16} == "register/Anchor/")
 	{
-		std::cout << "register/Anchor" << topicName << std::endl;
-		if (message->payloadlen < 1)
-		{
-			std::cout << "Retained message removed" << std::endl;
-			return 1;
-		}
-		checkAndAcknowledgeAnchor(message);
+		handleRegisterAnchor(message);
 	}
 	else if (std::string_view{topicName, 15} == "position/Anchor")
 	{
-		std::string s = (char *)message->payload;
-
-		std::string timestamp = parseData(s, "TIMESTAMP");
-		std::string anchor_id = parseData(s, "ANCHORID");
-		std::string tag_id = parseData(s, "TAGID");
-		std::string distance = parseData(s, "DISTANCE");
-
-		if (!(TagList::isInList(tag_id)))
-		{
-			std::cout << "New tag added" << std::endl;
-			TagList(tag_id, json::array(), timestamp);
-
-			// immediate tag update
-			Database::redis.publish("newTag", tag_id);
-
-			// in case tendi live is started after a tag was registered by Ziggy
-			json tags = TagList::getTagList();
-			Database::setJSON("tags", tags.dump());
-
-			SQLite3::insertTag(tag_id.c_str(), timestamp.c_str());
-		}
-		else
-		{
-			TagList::updateRange(tag_id, anchor_id, distance);
-			std::string data = tag_id;
-			json temp = TagList::getTagList();
-			for (auto &[key, value] : temp.items())
-			{
-				if (value["id"] == tag_id)
-				{
-					for (auto &[key1, value1] : value["anchors"].items())
-					{
-						data += ";" + value1["anchorID"].dump() + "=" + value1["distance"].dump();
-					}
-				}
-			}
-			data.erase(
-				remove(data.begin(), data.end(), '\"'),
-				data.end());
-
-			Database::redis.publish("newRange", data);
-
-		}
+		handlePositionAnchor(message);
 	}
 	else if (std::string_view{topicName, 14} == "deregister/Tag")
 	{
-		std::cout << "deregister/Tag" << std::endl;
-		std::string s = (char *)message->payload;
-		std::string timestamp = parseData(s, "TIMESTAMP");
-		std::string anchor_id = parseData(s, "ANCHORID");
-		std::string tag_id = parseData(s, "TAGID");
-
-		TagList::removeAnchor(tag_id, anchor_id);
-
-		json temp = TagList::getAnchorListForTag(tag_id);
-		if (!temp.size())
-		{
-			Database::redis.publish("removeTag", tag_id);
-		}
+		handleDeregisterTag(message);
 	}
 
 	MQTTClient_freeMessage(&message);
@@ -145,17 +137,41 @@ int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_m
 	return 1;
 }
 
-void checkAndAcknowledgeAnchor(MQTTClient_message *data)
+// Example of breaking up the function
+void handleRegisterAnchor(MQTTClient_message *message)
 {
 
-	std::string s = (char *)data->payload;
+	if (message->payloadlen < 1)
+	{
+		std::cout << "Retained message removed" << std::endl;
+		return;
+	}
+
+	std::string s = (char *)message->payload;
 	std::string anchor_id = parseData(s, "ANCHORID");
 	std::string coor_x = parseData(s, "COOR_X");
-	float x = std::stof(coor_x);
 	std::string coor_y = parseData(s, "COOR_Y");
-	float y = std::stof(coor_y);
 	std::string timestamp_str = parseData(s, "TIMESTAMP");
-	int timestamp = std::stof(timestamp_str);
+
+	float x, y;
+	int timestamp;
+
+	try
+	{
+		x = std::stof(coor_x);
+		y = std::stof(coor_y);
+		timestamp = std::stof(timestamp_str);
+	}
+	catch (const std::invalid_argument &ia)
+	{
+		std::cerr << "Invalid argument: " << ia.what() << '\n';
+		return;
+	}
+	catch (const std::out_of_range &oor)
+	{
+		std::cerr << "Out of Range error: " << oor.what() << '\n';
+		return;
+	}
 
 	json anchors = AnchorList::getAnchorList();
 	bool found = false;
@@ -177,6 +193,7 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 
 	anchors = AnchorList::getAnchorList();
 	Database::setJSON("anchors", anchors.dump());
+	Database::redis.publish("newAnchor", anchor_id);
 	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
 
 	MQTT::publish("accepted", "register/AnchorACK", 0);
@@ -185,4 +202,67 @@ void checkAndAcknowledgeAnchor(MQTTClient_message *data)
 	std::cout << "Anchor registered" << std::endl;
 
 	return;
+}
+
+void handlePositionAnchor(MQTTClient_message *message)
+{
+	std::string s = (char *)message->payload;
+
+	std::string timestamp = parseData(s, "TIMESTAMP");
+	std::string anchor_id = parseData(s, "ANCHORID");
+	std::string tag_id = parseData(s, "TAGID");
+	std::string distance = parseData(s, "DISTANCE");
+
+	if (!(TagList::isInList(tag_id)))
+	{
+		std::cout << "New tag added" << std::endl;
+		TagList(tag_id, json::array(), timestamp);
+
+		// immediate tag update
+		Database::redis.publish("newTag", tag_id);
+
+		// in case tendi live is started after a tag was registered by Ziggy
+		json tags = TagList::getTagList();
+		Database::setJSON("tags", tags.dump());
+
+		SQLite3::insertTag(tag_id.c_str(), timestamp.c_str());
+	}
+	else
+	{
+		TagList::updateRange(tag_id, anchor_id, distance);
+		std::string data = tag_id;
+		json temp = TagList::getTagList();
+		for (auto &[key, value] : temp.items())
+		{
+			if (value["id"] == tag_id)
+			{
+				for (auto &[key1, value1] : value["anchors"].items())
+				{
+					data += ";" + value1["anchorID"].dump() + "=" + value1["distance"].dump();
+				}
+			}
+		}
+		data.erase(
+			remove(data.begin(), data.end(), '\"'),
+			data.end());
+
+		Database::redis.publish("newRange", data);
+	}
+}
+
+void handleDeregisterTag(MQTTClient_message *message)
+{
+	std::cout << "deregister/Tag" << std::endl;
+	std::string s = (char *)message->payload;
+	std::string timestamp = parseData(s, "TIMESTAMP");
+	std::string anchor_id = parseData(s, "ANCHORID");
+	std::string tag_id = parseData(s, "TAGID");
+
+	TagList::removeAnchor(tag_id, anchor_id);
+
+	json temp = TagList::getAnchorListForTag(tag_id);
+	if (!temp.size())
+	{
+		Database::redis.publish("removeTag", tag_id);
+	}
 }

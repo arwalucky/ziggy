@@ -4,7 +4,6 @@
 
 
 #include "MQTTClient.h"
-#include "scripts/auxiliary_functions.hpp"
 #include "tag_list.hpp"
 #include "redis_client.h"
 #include "scripts/json.hpp"
