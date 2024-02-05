@@ -67,10 +67,13 @@ void TagList::removeAnchor(std::string id, std::string anchorID)
     if (value["id"] == id)
     {
 
-      value["anchors"].erase(value["anchors"].find(anchorID), value["anchors"].end());
+      value["anchors"].erase(value["anchors"].find(anchorID));
+
+      std::cout << value["anchors"] << std::endl;  
       return;
     }
   }
+
 };
 
 

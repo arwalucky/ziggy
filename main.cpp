@@ -29,7 +29,6 @@ void handleDeregisterTag(MQTTClient_message *message);
 
 std::string parseData(std::string str, std::string FLAG);
 
-
 int main()
 {
 	Database();
@@ -51,6 +50,7 @@ int main()
 		std::cout << "No anchors found" << std::endl;
 	}
 
+
 	// MQTT settings
 	MQTT();
 	MQTT::setCallbacks(connectionLost, messageArrived, messageDelivered);
@@ -69,52 +69,6 @@ void connectionLost(void *context, char *reason)
 void messageDelivered(void *context, MQTTClient_deliveryToken token)
 {
 	deliveredToken = token;
-}
-
-std::string parseData(std::string str, std::string FLAG)
-{
-	std::string s = str;
-	std::string delimiter = ";";
-
-	int counter = 0;
-	std::string str1;
-
-	if (FLAG == "TIMESTAMP")
-	{
-		counter = 3;
-	}
-	else if (FLAG == "DISTANCE" || FLAG == "COOR_Y")
-	{
-		counter = 2;
-	}
-	else if (FLAG == "TAGID" || FLAG == "COOR_X")
-	{
-		counter = 1;
-	}
-	else if (FLAG == "ANCHORID")
-	{
-		counter = 0;
-	}
-	else
-	{
-		std::cout << "FLAG not found" << std::endl;
-		return 0;
-	}
-
-	size_t pos = 0;
-	std::string token;
-	while ((pos = s.find(delimiter)) != std::string::npos)
-	{
-		if (counter == 0)
-		{
-			str1 = s.substr(0, pos);
-			s.erase(0, pos + delimiter.length());
-		}
-		s.erase(0, pos + delimiter.length());
-		counter--;
-	}
-
-	return str1;
 }
 
 int messageArrived(void *context, char *topicName, int topicLength, MQTTClient_message *message)
@@ -192,14 +146,14 @@ void handleRegisterAnchor(MQTTClient_message *message)
 	AnchorList(anchor_id, x, y, timestamp);
 
 	anchors = AnchorList::getAnchorList();
+
+	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
 	Database::setJSON("anchors", anchors.dump());
 	Database::redis.publish("newAnchor", anchor_id);
-	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
-
-	MQTT::publish("accepted", "register/AnchorACK", 0);
-	SQLite3::insertAnchor(anchor_id.c_str(), coor_x.c_str(), coor_y.c_str(), timestamp_str.c_str());
 
 	std::cout << "Anchor registered" << std::endl;
+
+	MQTT::publish("accepted", "register/AnchorACK", 0);
 
 	return;
 }
@@ -247,12 +201,12 @@ void handlePositionAnchor(MQTTClient_message *message)
 			data.end());
 
 		Database::redis.publish("newRange", data);
+		SQLite3::addRange(tag_id.c_str(), anchor_id.c_str(), distance.c_str(), timestamp.c_str());
 	}
 }
 
 void handleDeregisterTag(MQTTClient_message *message)
 {
-
 
 	if (message->payloadlen < 1)
 	{
@@ -271,8 +225,56 @@ void handleDeregisterTag(MQTTClient_message *message)
 	TagList::removeAnchor(tag_id, anchor_id);
 
 	json temp = TagList::getAnchorListForTag(tag_id);
+	std::cout << temp.size() << std::endl;
 	if (!temp.size())
 	{
+
 		Database::redis.publish("removeTag", tag_id);
 	}
+}
+
+std::string parseData(std::string str, std::string FLAG)
+{
+	std::string s = str;
+	std::string delimiter = ";";
+
+	int counter = 0;
+	std::string str1;
+
+	if (FLAG == "TIMESTAMP")
+	{
+		counter = 3;
+	}
+	else if (FLAG == "DISTANCE" || FLAG == "COOR_Y")
+	{
+		counter = 2;
+	}
+	else if (FLAG == "TAGID" || FLAG == "COOR_X")
+	{
+		counter = 1;
+	}
+	else if (FLAG == "ANCHORID")
+	{
+		counter = 0;
+	}
+	else
+	{
+		std::cout << "FLAG not found" << std::endl;
+		return 0;
+	}
+
+	size_t pos = 0;
+	std::string token;
+	while ((pos = s.find(delimiter)) != std::string::npos)
+	{
+		if (counter == 0)
+		{
+			str1 = s.substr(0, pos);
+			s.erase(0, pos + delimiter.length());
+		}
+		s.erase(0, pos + delimiter.length());
+		counter--;
+	}
+
+	return str1;
 }

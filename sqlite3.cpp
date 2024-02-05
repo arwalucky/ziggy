@@ -8,7 +8,7 @@ char *SQLite3::sql;
 SQLite3::SQLite3()
 {
     int rc;
-    rc = sqlite3_open("test.db", &db);
+    rc = sqlite3_open("history.db", &db);
 
     if (rc)
     {
@@ -108,6 +108,7 @@ void SQLite3::SQLselect(const char *columns, const char *table, const char *cond
     strcat(prompt, ";");
 
     sql = prompt;
+    std::cout << "SQL: " << sql << std::endl;
     sqlite3_exec(db, sql, callback, 0, &zErrMsg);
 }
 
