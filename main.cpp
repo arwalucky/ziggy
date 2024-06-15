@@ -32,6 +32,7 @@ int main()
 		}
 	}
 
+	// add mock anchors to redis
 	AnchorList("AAAA1", 2, 9, 0);
 	AnchorList("AAAA2", 7, 7, 0);
 	AnchorList("AAAA3", 15, 4.5, 0);
